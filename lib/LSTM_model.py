@@ -2,9 +2,9 @@
 ###                              LSTM Model                             ###
 ###########################################################################
 import numpy as np
-from keras.models import Model
+from keras.models import Model, load_model
 from keras.layers import Input, LSTM, Dense, Dropout
-from keras.callbacks import EarlyStopping
+from keras.callbacks import EarlyStopping, ModelCheckpoint
 
 class LSTM_model(object):
     def __init__(self, input_shape, structure='1-layer-lstm'):
@@ -25,19 +25,26 @@ class LSTM_model(object):
         print(model.summary())
         return model
     
-    def train(self, X_train, y_train, validation_split=0.0, validation_data=None, batch_size=32, epochs=200, verbose=1, patience=None, shuffle=False):
+    def train(self, X_train, y_train, save_path, validation_split=0.0, validation_data=None, batch_size=32, epochs=200, verbose=1, patience=None, shuffle=False):
         print('Start training neural network ... ', end='', flush=True)
-        early_stopper = None if patience is None else [EarlyStopping(patience=patience, verbose=1)]
+        early_stopper = None if patience is None else EarlyStopping(patience=patience, verbose=1)
+        check_pointer = ModelCheckpoint(save_path, verbose=1, save_best_only=True)
+        callbacks = [call for call in [early_stopper, check_pointer] if call is not None]
         trace = self.model.fit(X_train, y_train, 
                                validation_split=validation_split,
                                validation_data=validation_data,
                                batch_size=batch_size,
                                epochs=epochs,
                                verbose=verbose,
-                               callbacks=early_stopper,
+                               callbacks=callbacks,
                                shuffle=shuffle)
         print('Done')
         return trace
+    
+    def loadModel(self, path):
+        print('Loading trained LSTM model ... ', end='', flush=True)
+        self.model = load_model(path)
+        print('Done')
     
     def predict_one_step(self, X):
         '''
