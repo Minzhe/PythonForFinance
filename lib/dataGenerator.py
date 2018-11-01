@@ -7,9 +7,19 @@ import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 
 class dataGenerator(object):
-    def __init__(self, data, lb, normalize_window=None, train_val_split=0.8, test_windows=30):
+    def __init__(self, data, lb, lf, normalize_window=None, train_val_split=0.8, test_windows=30):
+        '''
+        == parameters ==:
+        data: time series data
+        lb: number of time steps to look back for forecast
+        lf: number of time steps to forecast
+        normalize_window: whether normalize each window indepedently
+        train_val_split: percentage for training data
+        test_window: time steps to forecast for testing
+        '''
         self.data = np.array(data)
         self.lb = lb
+        self.lf = lf
         self.normalize_window = normalize_window
         self.train_val_split = train_val_split
         self.test_windows = test_windows
@@ -43,30 +53,32 @@ class dataGenerator(object):
             raise ValueError('Unrecognizable normalization method.')
         return y
     
+    def build_prediction_table()
+    
     def _get_train_instance(self, data):
         '''
         Generate training instances from series data.
         '''
-        lb = self.lb
+        lb, lf = self.lb, self.lf
         X, y, base = [], [], []
-        for i in range(len(data) - lb):
-            tmp_X, tmp_y, tmp_base = self._get_window_data(data[i:(i+lb+1)])
+        for i in range(len(data) - lb - lf + 1):
+            tmp_X, tmp_y, tmp_base = self._get_window_data(data[i:(i+lb+lf)])
             X.append(tmp_X)
             y.append(tmp_y)
             base.append(tmp_base)
-        return np.array(X), np.reshape(y, (-1,1)), np.reshape(base, (-1,1))
+        return np.array(X), np.array(y), np.reshape(base, (-1,1))
     
     def _get_window_data(self, data):
         '''
         Normalize window to make fisrt value 1 and rest the ratio to the first value.
         '''
-        lb = self.lb
+        lb, lf = self.lb, self.lf
         if self.normalize_window == 'ratio':
-            X, y, base = data[:lb]/data[0], data[lb:]/data[0], data[0]
+            X, y, base = data[:lb]/data[0], data[-lf:]/data[0], data[0]
         elif self.normalize_window == 'percent_change':
-            X, y, base = (data[:lb]/data[0]-1)*100, (data[lb:]/data[0]-1)*100, data[0]
+            X, y, base = (data[:lb]/data[0]-1)*100, (data[-lf:]/data[0]-1)*100, data[0]
         elif self.normalize_window is None:
-            X, y, base = data[:lb], data[lb:], 1
+            X, y, base = data[:lb], data[-lf:], 1
         else:
             raise ValueError('Unrecognizable normalization method.')
         return np.reshape(X, (-1,1)), np.array(y), np.array(base)

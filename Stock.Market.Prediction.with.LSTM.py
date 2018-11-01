@@ -25,19 +25,20 @@ jpm = data.loc[data['Name'] == 'JPM', 'close']
 
 # >>>>>>>>>>>>  Split data and normalize  <<<<<<<<<<<<<< #
 # apple
-aapl_dgr = dataGenerator(data=aapl, lb=14, normalize_window='percent_change', train_val_split=0.8, test_windows=30)
+aapl_dgr = dataGenerator(data=aapl, lb=14, lf=1, normalize_window='percent_change', train_val_split=0.8, test_windows=30)
 X1_train, y1_train, base1_train = aapl_dgr.get_train_data()
 X1_val, y1_val, base1_val = aapl_dgr.get_val_data()
 X1_test, y1_test, base1_test = aapl_dgr.get_test_data()
-# jpmorgan
-jpm_dgr = dataGenerator(data=jpm, lb=14, normalize_window='percent_change', train_val_split=0.8, test_windows=30)
-X2_train, y2_train, base2_train = jpm_dgr.get_train_data()
-X2_val, y2_val, base2_val = jpm_dgr.get_val_data()
-X2_test, y2_test, base2_test = jpm_dgr.get_test_data()
+
+# # jpmorgan
+# jpm_dgr = dataGenerator(data=jpm, lb=14, lf=5, normalize_window='percent_change', train_val_split=0.8, test_windows=30)
+# X2_train, y2_train, base2_train = jpm_dgr.get_train_data()
+# X2_val, y2_val, base2_val = jpm_dgr.get_val_data()
+# X2_test, y2_test, base2_test = jpm_dgr.get_test_data()
 
 # >>>>>>>>>>>>  Build LSTM model  <<<<<<<<<<<<<< #
 # train model on apple
-lstm = LSTM_model(input_shape=(14,1), structure='1-layer-lstm')
+lstm = LSTM_model(input_shape=(14,1), output_dim=1, structure='1-layer-lstm')
 trace = lstm.train(X1_train, y1_train, save_path='lib/model/lstm.h5', validation_data=(X1_val, y1_val), epochs=200, patience=20, shuffle=False)
 lstm.loadModel('lib/model/lstm.h5')
 f, ax = util.plot_trace(trace)
@@ -47,13 +48,13 @@ plt.show()
 # apple
 pred1_train = aapl_dgr.inverse_transform(lstm.predict_one_step(X1_train), base1_train)
 pred1_val = aapl_dgr.inverse_transform(lstm.predict_one_step(X1_val), base1_val)
-pred1_test = aapl_dgr.inverse_transform(lstm.predict_multi_steps(X1_test, steps=30), base1_test)
-# jpmorgan
-pred2_train = jpm_dgr.inverse_transform(lstm.predict_one_step(X2_train), base2_train)
-pred2_val = jpm_dgr.inverse_transform(lstm.predict_one_step(X2_val), base2_val)
-pred2_test = jpm_dgr.inverse_transform(lstm.predict_multi_steps(X2_test, steps=30), base2_test)
+pred1_test = aapl_dgr.inverse_transform(lstm.predict_multi_steps(X1_test, steps=30, stride=1), base1_test)
+# # jpmorgan
+# pred2_train = jpm_dgr.inverse_transform(lstm.predict_one_step(X2_train), base2_train)
+# pred2_val = jpm_dgr.inverse_transform(lstm.predict_one_step(X2_val), base2_val)
+# pred2_test = jpm_dgr.inverse_transform(lstm.predict_multi_steps(X2_test, steps=30), base2_test)
 # plot
-f, (ax1, ax2) = plt.subplots(2)
-util.plot_series(truth=aapl[14:], title='AAPL', pred=(pred1_train, pred1_val, pred1_test), ax=ax1)
-util.plot_series(truth=jpm[14:], title='JPM', pred=(pred2_train, pred2_val, pred2_test), ax=ax2)
+f, ax = plt.subplots()
+util.plot_series(truth=aapl[14:], title='AAPL', pred=(pred1_train, pred1_val, pred1_test), ax=ax)
+# util.plot_series(truth=jpm[14:], title='JPM', pred=(pred2_train, pred2_val, pred2_test), ax=ax2)
 plt.show()
